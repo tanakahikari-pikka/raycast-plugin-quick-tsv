@@ -1,55 +1,41 @@
 # Quick TSV
 
-A Raycast plugin for quickly creating and managing TSV (Tab-Separated Values) data directly within Raycast.
+A Raycast plugin for quickly creating TSV (Tab-Separated Values) data directly within Raycast.
 
 ## Features
 
-- **Create TSV in Raycast**: Build TSV data directly without leaving Raycast
-- **Dynamic Table Management**:
-  - Add/remove columns
-  - Add/remove rows
-  - Edit headers and cell values
-- **Real-time Preview**: See TSV output as you type
-- **One-Click Copy**: Copy generated TSV directly to clipboard
-- **Keyboard Shortcuts**:
-  - `Cmd+N`: Add new row
-  - `Cmd+Shift+N`: Add new column
+- **TextArea direct input**: Type data with 2+ spaces or tabs as column separators
+- **Real-time table preview**: Markdown table preview updates as you type
+- **One-click copy**: Copy generated TSV to clipboard (`Enter`)
+- **Clipboard paste**: Paste existing TSV data (`Cmd+Shift+V`)
+
+## Setup
+
+### Prerequisites
+
+- [Raycast](https://raycast.com/) installed
+- [Node.js](https://nodejs.org/) (v20+)
+- [pnpm](https://pnpm.io/)
+
+### Install & Run
+
+```bash
+pnpm install
+pnpm dev
+```
+
+`pnpm dev` を実行すると、拡張機能がRaycastに自動的にインポートされます。**開発サーバーを停止した後もRaycastに永続インストールされ**、そのまま使い続けられます。アンインストールするにはRaycastの設定 > Extensions から手動で削除してください。
 
 ## Usage
 
-1. Open Quick TSV in Raycast
-2. Edit column headers as needed
-3. Fill in your data row by row
-4. Use keyboard shortcuts to add more rows/columns
-5. Press `Cmd+C` or use the Copy action to send TSV to clipboard
-6. Paste directly into your management system
+1. Raycastで「Quick TSV」を検索して開く
+2. TextAreaにデータを入力（2つ以上のスペースまたはタブで列を区切り、Enterで改行）
+3. 下部のプレビューでテーブル形式を確認
+4. `Enter` でTSVをクリップボードにコピー
+5. スプレッドシート等に貼り付け
 
-## Installation
-
-```bash
-npm install
-npm run dev
-```
-
-## Build
-
-```bash
-npm run build
-```
-
-## Development
-
-This plugin is built with React and the Raycast API.
-
-### Project Structure
+## Project Structure
 
 - `src/index.tsx` - Main plugin component
-- `package.json` - Project configuration
+- `package.json` - Raycast extension manifest
 - `tsconfig.json` - TypeScript configuration
-
-## Notes
-
-The plugin expects properly formatted TSV data with:
-- Headers as the first row
-- Tab-separated columns
-- Consistent column count across all rows
