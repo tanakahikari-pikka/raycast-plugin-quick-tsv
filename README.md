@@ -1,25 +1,28 @@
 # Quick TSV
 
-A Raycast plugin for quickly handling and formatting TSV (Tab-Separated Values) data from your clipboard.
+A Raycast plugin for quickly creating and managing TSV (Tab-Separated Values) data directly within Raycast.
 
 ## Features
 
-- **Clipboard Integration**: Automatically load TSV data from clipboard
-- **Live Validation**: Parse and validate TSV structure in real-time
-- **Multiple Format Export**:
-  - JSON (array of objects)
-  - Markdown (table format)
-  - CSV (comma-separated values)
-  - Original TSV
-- **Data Preview**: View headers and row samples
-- **Error Detection**: Identify rows with inconsistent column counts
+- **Create TSV in Raycast**: Build TSV data directly without leaving Raycast
+- **Dynamic Table Management**:
+  - Add/remove columns
+  - Add/remove rows
+  - Edit headers and cell values
+- **Real-time Preview**: See TSV output as you type
+- **One-Click Copy**: Copy generated TSV directly to clipboard
+- **Keyboard Shortcuts**:
+  - `Cmd+N`: Add new row
+  - `Cmd+Shift+N`: Add new column
 
 ## Usage
 
-1. Copy TSV data to your clipboard
-2. Open Quick TSV in Raycast
-3. The plugin automatically loads and parses your clipboard data
-4. Convert to desired format and copy back to clipboard
+1. Open Quick TSV in Raycast
+2. Edit column headers as needed
+3. Fill in your data row by row
+4. Use keyboard shortcuts to add more rows/columns
+5. Press `Cmd+C` or use the Copy action to send TSV to clipboard
+6. Paste directly into your management system
 
 ## Installation
 
