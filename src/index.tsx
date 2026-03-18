@@ -1,170 +1,196 @@
-import { useState, useEffect } from "react";
-import { Form, Action, ActionPanel, showToast, Toast, Clipboard } from "@raycast/api";
+import { useState } from "react";
+import { Form, Action, ActionPanel, showToast, Toast, Clipboard, Alert, confirmAlert } from "@raycast/api";
 
-interface TSVData {
-  headers: string[];
-  rows: string[][];
+interface Row {
+  id: string;
+  cells: string[];
 }
 
 export default function Command() {
-  const [tsvContent, setTsvContent] = useState<string>("");
-  const [parsedData, setParsedData] = useState<TSVData | null>(null);
-  const [error, setError] = useState<string>("");
+  const [headers, setHeaders] = useState<string[]>(["Name", "Email", "Status"]);
+  const [rows, setRows] = useState<Row[]>([
+    { id: "1", cells: ["", "", ""] },
+  ]);
 
-  // Load clipboard content on mount
-  useEffect(() => {
-    loadClipboard();
-  }, []);
-
-  const loadClipboard = async () => {
-    try {
-      const clipboard = await Clipboard.readText();
-      if (clipboard) {
-        setTsvContent(clipboard);
-        parseAndValidateTSV(clipboard);
-      }
-    } catch (err) {
-      setError("Failed to read clipboard");
-    }
+  const generateTSV = (): string => {
+    const headerLine = headers.join("\t");
+    const dataLines = rows.map((row) => row.cells.join("\t"));
+    return [headerLine, ...dataLines].join("\n");
   };
 
-  const parseAndValidateTSV = (text: string) => {
-    try {
-      setError("");
-      const lines = text.trim().split("\n");
-
-      if (lines.length === 0) {
-        setError("Empty content");
-        setParsedData(null);
-        return;
-      }
-
-      const headers = lines[0].split("\t");
-      const rows = lines.slice(1).map((line) => line.split("\t"));
-
-      // Validate consistency
-      const invalidRows = rows.filter((row) => row.length !== headers.length);
-      if (invalidRows.length > 0) {
-        setError(
-          `Found ${invalidRows.length} rows with inconsistent column count`
-        );
-      }
-
-      setParsedData({ headers, rows });
-    } catch (err) {
-      setError("Failed to parse TSV");
-      setParsedData(null);
-    }
-  };
-
-  const handleTsvChange = (value: string) => {
-    setTsvContent(value);
-    parseAndValidateTSV(value);
-  };
-
-  const copyToClipboard = async (text: string) => {
-    await Clipboard.copy(text);
+  const copyTSV = async () => {
+    const tsv = generateTSV();
+    await Clipboard.copy(tsv);
     showToast({
       style: Toast.Style.Success,
-      title: "Copied to clipboard",
+      title: "TSV copied to clipboard! 📋",
     });
   };
 
-  const copyAsJson = async () => {
-    if (!parsedData) return;
-
-    const json = JSON.stringify(
-      parsedData.rows.map((row) =>
-        Object.fromEntries(parsedData.headers.map((h, i) => [h, row[i] || ""]))
-      ),
-      null,
-      2
-    );
-
-    await copyToClipboard(json);
-  };
-
-  const copyAsMarkdown = async () => {
-    if (!parsedData) return;
-
-    const { headers, rows } = parsedData;
-    let markdown = `| ${headers.join(" | ")} |\n`;
-    markdown += `| ${headers.map(() => "---").join(" | ")} |\n`;
-    markdown += rows.map((row) => `| ${row.join(" | ")} |`).join("\n");
-
-    await copyToClipboard(markdown);
-  };
-
-  const copyAsCSV = async () => {
-    if (!parsedData) return;
-
-    const { headers, rows } = parsedData;
-    const escapeCSV = (field: string) => {
-      if (field.includes(",") || field.includes('"') || field.includes("\n")) {
-        return `"${field.replace(/"/g, '""')}"`;
-      }
-      return field;
+  const addRow = () => {
+    const newRow: Row = {
+      id: Date.now().toString(),
+      cells: Array(headers.length).fill(""),
     };
+    setRows([...rows, newRow]);
+  };
 
-    let csv = headers.map(escapeCSV).join(",") + "\n";
-    csv += rows.map((row) => row.map(escapeCSV).join(",")).join("\n");
+  const deleteRow = async (id: string) => {
+    if (rows.length <= 1) {
+      await showToast({
+        style: Toast.Style.Warning,
+        title: "Cannot delete the last row",
+      });
+      return;
+    }
 
-    await copyToClipboard(csv);
+    const ok = await confirmAlert({
+      title: "Delete row?",
+      primaryAction: { title: "Delete", style: Alert.ActionStyle.Destructive },
+    });
+
+    if (ok) {
+      setRows(rows.filter((r) => r.id !== id));
+    }
+  };
+
+  const updateCellValue = (rowId: string, colIndex: number, value: string) => {
+    setRows(
+      rows.map((row) =>
+        row.id === rowId
+          ? {
+              ...row,
+              cells: row.cells.map((cell, i) => (i === colIndex ? value : cell)),
+            }
+          : row
+      )
+    );
+  };
+
+  const updateHeader = (colIndex: number, value: string) => {
+    setHeaders(headers.map((h, i) => (i === colIndex ? value : h)));
+  };
+
+  const addColumn = () => {
+    const newColCount = headers.length + 1;
+    setHeaders([...headers, `Column ${newColCount}`]);
+    setRows(rows.map((row) => ({ ...row, cells: [...row.cells, ""] })));
+  };
+
+  const deleteColumn = async (colIndex: number) => {
+    if (headers.length <= 1) {
+      await showToast({
+        style: Toast.Style.Warning,
+        title: "Cannot delete the last column",
+      });
+      return;
+    }
+
+    const ok = await confirmAlert({
+      title: `Delete column "${headers[colIndex]}"?`,
+      primaryAction: { title: "Delete", style: Alert.ActionStyle.Destructive },
+    });
+
+    if (ok) {
+      setHeaders(headers.filter((_, i) => i !== colIndex));
+      setRows(
+        rows.map((row) => ({
+          ...row,
+          cells: row.cells.filter((_, i) => i !== colIndex),
+        }))
+      );
+    }
   };
 
   return (
     <Form
       actions={
         <ActionPanel>
-          <Action title="Reload from Clipboard" onAction={loadClipboard} />
-          {parsedData && (
-            <>
-              <Action title="Copy as JSON" onAction={copyAsJson} />
-              <Action title="Copy as Markdown" onAction={copyAsMarkdown} />
-              <Action title="Copy as CSV" onAction={copyAsCSV} />
-              <Action
-                title="Copy Original TSV"
-                onAction={() => copyToClipboard(tsvContent)}
-              />
-            </>
-          )}
+          <Action title="Copy TSV to Clipboard" onAction={copyTSV} />
+          <Action
+            title="Add Row"
+            onAction={addRow}
+            shortcut={{ modifiers: ["cmd"], key: "n" }}
+          />
+          <Action
+            title="Add Column"
+            onAction={addColumn}
+            shortcut={{ modifiers: ["cmd", "shift"], key: "n" }}
+          />
         </ActionPanel>
       }
     >
-      <Form.TextArea
-        id="tsvContent"
-        title="TSV Data"
-        placeholder="Paste your TSV data here..."
-        value={tsvContent}
-        onChange={handleTsvChange}
-      />
-
-      {error && <Form.Description text={`⚠️ ${error}`} />}
-
-      {parsedData && (
-        <>
-          <Form.Description
-            text={`✓ Parsed: ${parsedData.headers.length} columns, ${parsedData.rows.length} rows`}
+      <Form.Section title="Column Headers">
+        {headers.map((header, idx) => (
+          <Form.TextField
+            key={`header-${idx}`}
+            id={`header-${idx}`}
+            title={`Column ${idx + 1}`}
+            value={header}
+            onChange={(value) => updateHeader(idx, value)}
+            actions={
+              <ActionPanel>
+                <Action
+                  title="Delete This Column"
+                  style={Action.Style.Destructive}
+                  onAction={() => deleteColumn(idx)}
+                />
+              </ActionPanel>
+            }
           />
+        ))}
+      </Form.Section>
 
-          <Form.Separator />
+      <Form.Separator />
 
-          <Form.Description title="Preview" text="" />
-          <Form.Description
-            text={`Headers: ${parsedData.headers.join(" | ")}`}
-          />
+      <Form.Section title={`Data Rows (${rows.length})`}>
+        {rows.map((row, rowIdx) => (
+          <div key={row.id}>
+            {rowIdx > 0 && <Form.Separator />}
 
-          {parsedData.rows.slice(0, 3).map((row, idx) => (
-            <Form.Description key={idx} text={`Row ${idx + 1}: ${row.join(" | ")}`} />
-          ))}
-
-          {parsedData.rows.length > 3 && (
             <Form.Description
-              text={`... and ${parsedData.rows.length - 3} more rows`}
+              title={`Row ${rowIdx + 1}`}
+              text={
+                rows.length > 1
+                  ? `[Delete]（Cmd+Delete）`
+                  : "Last row - cannot delete"
+              }
             />
-          )}
-        </>
-      )}
+
+            {headers.map((header, colIdx) => (
+              <Form.TextField
+                key={`cell-${row.id}-${colIdx}`}
+                id={`cell-${row.id}-${colIdx}`}
+                title={header}
+                value={row.cells[colIdx] || ""}
+                onChange={(value) => updateCellValue(row.id, colIdx, value)}
+                placeholder={`Enter ${header}`}
+              />
+            ))}
+
+            {rows.length > 1 && (
+              <Form.Description text="" />
+            )}
+          </div>
+        ))}
+      </Form.Section>
+
+      <Form.Separator />
+
+      <Form.Section title="Preview & Output">
+        <Form.Description
+          title="Current TSV"
+          text={`Headers: ${headers.join(" | ")}\nRows: ${rows.length}`}
+        />
+
+        <Form.TextArea
+          id="preview"
+          title="TSV Content"
+          value={generateTSV()}
+          onChange={() => {}}
+          enableMarkdown={false}
+        />
+      </Form.Section>
     </Form>
   );
 }
