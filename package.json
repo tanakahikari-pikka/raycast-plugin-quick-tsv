@@ -1,0 +1,31 @@
+{
+  "name": "quick-tsv",
+  "title": "Quick TSV",
+  "description": "Clipboard TSV data handler for quick management",
+  "icon": "command-icon.png",
+  "author": "Ray Cast User",
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "index",
+      "title": "Quick TSV",
+      "description": "Handle and format TSV data from clipboard",
+      "mode": "view"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.82.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.8",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "dev": "ray develop",
+    "build": "ray build -e production",
+    "lint": "eslint src"
+  }
+}
